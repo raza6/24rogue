@@ -1,6 +1,7 @@
+let rng = new Math.seedrandom();
 let player = {};
 let map = [...new Array(24)].map(v => new Array(24));
-let ennemies = new Array(getRandom(4, 8)); 
+let ennemies; 
 
 const availableRooms = [
 	[
@@ -62,12 +63,12 @@ const availableRooms = [
 ]
 
 /*
-Use seed random
-Generate central room
-Generate other rooms based on grid algorithm
-Add escape stair
+Use seed random -> need to reinit all variables when restart pressed
+- Generate central room
+- Generate other rooms based on grid algorithm
 
 Better ennemies generation
+Kill all enemies -> make escape stair appears
 
 Implement fighting + life
 Implement loot
@@ -85,10 +86,11 @@ const CELL = {
 };
 
 function getRandom(min, max) {
-	const rand = Math.floor(Math.random() * (max - min)) + min;
+	const rand = Math.floor(rng() * (max - min)) + min;
 	return rand;
 }
 
+// Draw the map on the grid
 function renderGrid(game) {
 	for (let i = 0; i < 24; i++) {
 		for (let j = 0; j < 24; j++) {
@@ -123,13 +125,13 @@ function create(game) {
 			}
 		}
 	}
-	//Select random room
+	// Select random room
 	const numberOfRoom = getRandom(5, 10);
 	let choosedRooms = [...availableRooms];
 	for (let i = 0; i < numberOfRoom; i++) {
 		choosedRooms.splice(getRandom(0, choosedRooms.length), 1);
 	}
-	//Add choosen room to the map
+	// Add choosen room to the map
 	for (let room of choosedRooms) {
 		for (let rect of room) {
 			const { x1, y1, x2, y2 } = rect;
@@ -142,6 +144,7 @@ function create(game) {
 		
 	}
 	
+	ennemies = new Array(getRandom(4, 8));
 	for (let i = 0; i < ennemies.length; i++) {
 		ennemies[i] = {
 			x: getRandom(2, 21),
@@ -160,6 +163,7 @@ function update(game) {
 	game.setDot(player.x, player.y, Color.Green);
 }
 
+// Prevent player from moving on non-suitable cell
 function moveTo(x, y) {
 	if (map[x][y] === CELL.EMPTY) {
 		player.x = x;
@@ -191,3 +195,4 @@ let config = {
 
 let game = new Game(config);
 game.run();
+
