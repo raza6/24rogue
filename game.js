@@ -1,7 +1,7 @@
 let rng = new Math.seedrandom();
 let player = {};
 let map = [...new Array(24)].map(v => new Array(24));
-let ennemies; 
+let enemies; 
 
 const availableRooms = [
 	[
@@ -67,8 +67,10 @@ Use seed random -> need to reinit all variables when restart pressed
 - Generate central room
 - Generate other rooms based on grid algorithm
 
-Better ennemies generation
+- Better enemies generation
+Enemies AI
 Kill all enemies -> make escape stair appears
+
 
 Implement fighting + life
 Implement loot
@@ -82,12 +84,12 @@ Berlin interpretation:
 const CELL = {
 	WALL: 1,
 	EMPTY: 2,
-	ENNEMY: 3,
+	ENEMY_1: 3,
+	ENEMY_2: 4,
 };
 
 function getRandom(min, max) {
-	const rand = Math.floor(rng() * (max - min)) + min;
-	return rand;
+	return Math.floor(rng() * (max - min)) + min;
 }
 
 // Draw the map on the grid
@@ -103,6 +105,9 @@ function renderGrid(game) {
 					break;
 				case 3:
 					game.setDot(i, j, Color.Violet);
+					break;
+				case 4:
+					game.setDot(i, j, Color.Indigo);
 					break;
 			}
 		}
@@ -143,14 +148,18 @@ function create(game) {
 		}
 		
 	}
-	
-	ennemies = new Array(getRandom(4, 8));
-	for (let i = 0; i < ennemies.length; i++) {
-		ennemies[i] = {
-			x: getRandom(2, 21),
-			y: getRandom(2, 21),
+	// Create enemies
+	console.table(choosedRooms);
+	enemies = new Array(getRandom(4, 10));
+	for (let i = 0; i < enemies.length; i++) {
+		const enemieRoom = {...choosedRooms[getRandom(0, choosedRooms.length)][0]};
+		enemies[i] = {
+			x: getRandom(enemieRoom.x1, enemieRoom.x2),
+			y: getRandom(enemieRoom.y1, enemieRoom.y2),
+			type: getRandom(0, 100) > 25 ? CELL.ENEMY_1 : CELL.ENEMY_2,
+			turn: true,
 		}
-		//map[ennemies[i].x][ennemies[i].y] = CELL.ENNEMY;
+		map[enemies[i].x][enemies[i].y] = enemies[i].type;
 	}
 	console.log(map);
 
@@ -163,27 +172,80 @@ function update(game) {
 	game.setDot(player.x, player.y, Color.Green);
 }
 
-// Prevent player from moving on non-suitable cell
-function moveTo(x, y) {
+function moveTowards(sourcex, sourcey, targetx, targety) {
+	dirx = targetx - sourcex;
+	diry = targety - sourcey;
+	if (Math.abs(dirx) > Math.abs(diry)) {
+		return {dx: sourcex + Math.sign(dirx), dy: sourcey};
+	} else {
+		return {dx: sourcex, dy: sourcey + Math.sign(diry)};
+	}
+}
+
+// Handle player actions + AI
+function playerAct(x, y) {
 	if (map[x][y] === CELL.EMPTY) {
 		player.x = x;
 		player.y = y;
+	}
+	
+	for (let en of enemies) {
+		px = player.x;
+		py = player.y;
+		const { x: ex, y: ey } = en;
+		const dist = Math.abs(px - ex) + Math.abs(py - ey);
+		if(en.type === CELL.ENEMY_1) {
+			if(dist < 4) {
+				console.log('close', dist)
+				if (dist === 1) {
+					//ATTACK
+				} else {
+					const {dx, dy} = moveTowards(ex, ey, px, py);
+					if (map[dx][dy] === CELL.EMPTY) {
+						en.x = dx;
+						en.y = dy;
+						map[en.x][en.y] = CELL.ENEMY_1;
+						map[ex][ey] = CELL.EMPTY;
+					}
+				}
+			}
+		} else {
+			if(dist < 10) {
+				console.log('close', dist)
+				if (dist === 1) {
+					//ATTACK
+				} else {
+					if (en.turn) {
+						en.turn = false;
+						const {dx, dy} = moveTowards(ex, ey, px, py);
+						if (map[dx][dy] === CELL.EMPTY) {
+							en.x = dx;
+							en.y = dy;
+							map[en.x][en.y] = CELL.ENEMY_2;
+							map[ex][ey] = CELL.EMPTY;
+						}
+					} else {
+						en.turn = true;
+					}
+				}
+			}
+		}
 	}
 }
 
 function onKeyPress(direction) {
 	let { x, y } = player;
 	if (direction == Direction.Up) {
-		moveTo(x, y - 1);
+		playerAct(x, y - 1);
 	}
 	if (direction == Direction.Down) {
-		moveTo(x, y + 1);
+		playerAct(x, y + 1);
 	}
 	if (direction == Direction.Left) {
-		moveTo(x - 1, y);
+		playerAct(x - 1, y);
 	}
 	if (direction == Direction.Right) {
-		moveTo(x + 1, y);
+		playerAct(x + 1, y);
 	}
 }
 
