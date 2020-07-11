@@ -1,10 +1,20 @@
 let rng = new Math.seedrandom();
-let player = {};
+let player;
 let map = [...new Array(24)].map(v => new Array(24));
 let enemies;
 let currentEnemy;
 let gameRun = true;
 let seedInput;
+let currentLvl;
+
+const CELL = {
+	PLAYER: 0,
+	WALL: 1,
+	EMPTY: 2,
+	ENEMY_1: 3,
+	ENEMY_2: 4,
+	STAIRS: 5,
+};
 
 const availableRooms = [
 	[
@@ -76,26 +86,17 @@ Kill all enemies -> make escape stair appears
 
 
 - Implement fighting + life
-Implement loot
-
-Berlin interpretation:
-- Permadeath
-- mystery item
-
+Implement loot : hp up, regen, better weapons, skip floor
+Boss lvl4
 */
 
 function restart() {
-	rng = new Math.seedrandom(seedInput.value);
+	if (seedInput.value !== '') {
+		rng = new Math.seedrandom(seedInput.value);
+	}
 	create(game);
 	gameRun = true;
 }
-
-const CELL = {
-	WALL: 1,
-	EMPTY: 2,
-	ENEMY_1: 3,
-	ENEMY_2: 4,
-};
 
 function getRandom(min, max) {
 	return Math.floor(rng() * (max - min)) + min;
@@ -106,6 +107,9 @@ function renderGrid(game) {
 	for (let i = 0; i < 24; i++) {
 		for (let j = 0; j < 24; j++) {
 			switch (map[i][j]) {
+				case 0:
+					game.setDot(i, j, Color.Green);
+					break;
 				case 1:
 					game.setDot(i, j, Color.Black);
 					break;
@@ -117,6 +121,9 @@ function renderGrid(game) {
 					break;
 				case 4:
 					game.setDot(i, j, Color.Indigo);
+					break;
+				case 5:
+					game.setDot(i, j, Color.Orange);
 					break;
 			}
 		}
@@ -135,6 +142,7 @@ function create(game) {
 			damageMax: 3,
 		}
 	};
+	currentLvl = 1;
 	// Creating base dungeon with starting room
 	for (let i = 0; i < 24; i++) {
 		for (let j = 0; j < 24; j++) {
@@ -182,9 +190,9 @@ function create(game) {
 	}
 	console.log(map);
 
+	map[player.x][player.y] = CELL.PLAYER;
 	renderText();
 	renderGrid(game);
-	game.setDot(player.x, player.y, Color.Green);
 }
 
 function renderText() {
@@ -192,13 +200,14 @@ function renderText() {
 	let ehp = '';
 	if (currentEnemy) {
 		ehp = `Enemy HP: ${currentEnemy.hp}`;
+	} else if (enemies.length === 0) {
+		ehp = `Exit stairs unlocked`;
 	}
-	game.setText(`${php}       ${ehp}`);
+	game.setText(`Lvl ${currentLvl} - ${php}       ${ehp}`);
 }
 
 function update(game) {
 	renderGrid(game);
-	game.setDot(player.x, player.y, Color.Green);
 }
 
 
@@ -226,11 +235,19 @@ function moveTowards(sourcex, sourcey, targetx, targety) {
 
 // Handle player actions + AI
 function playerAct(x, y) {
-	if (map[x][y] === CELL.EMPTY) {
+	if (map[x][y] === CELL.EMPTY) { // Player movement
+		map[player.x][player.y] = CELL.EMPTY;
 		player.x = x;
 		player.y = y;
+		map[player.x][player.y] = CELL.PLAYER;
 		currentEnemy = undefined;
-	} else if (map[x][y] === CELL.ENEMY_1 || map[x][y] === CELL.ENEMY_2) { // Attack by player
+	} else if (map[x][y] === CELL.STAIRS) {
+		map[player.x][player.y] = CELL.EMPTY;
+		player.x = x;
+		player.y = y;
+		map[player.x][player.y] = CELL.PLAYER;
+		// Reinit lvl but keep stuff and things
+	} else if (map[x][y] === CELL.ENEMY_1 || map[x][y] === CELL.ENEMY_2) { // Player attack
 		currentEnemy = enemies.find(en => en.x === x && en.y === y);
 		currentEnemy.hp -= getRandom(player.weapon.damageMin, player.weapon.damageMax);
 		if (currentEnemy.hp <= 0) {
@@ -286,7 +303,7 @@ function playerAct(x, y) {
 							dy = en.y;
 							break;
 					}
-					if (player.x === dx && player.y === dy) {
+					if (map[dx][dy] === CELL.PLAYER) {
 						player.hp -= getRandom(en.damageMin, en.damageMax);
 					} else if (map[dx][dy] === CELL.EMPTY) {
 						en.x = dx;
@@ -304,7 +321,10 @@ function playerAct(x, y) {
 	
 	if (player.hp <= 0) {
 		game.setText('You lose, too bad');
+		seedInput.value = '';
 		gameRun = false;
+	} else if (enemies.length === 0) {
+		map[12][12] = CELL.STAIRS;
 	}
 }
 
@@ -337,6 +357,10 @@ game.run();
 
 window.onload = () => {
 	document.getElementById('restartGame').addEventListener('click', restart);
+	document.addEventListener('keydown', (e) => {
+		if (e.key === 'f') {
+			enemies = [];
+		}
+	})
 	seedInput = document.getElementById('seedInput');
 };
-
