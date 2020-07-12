@@ -4,3 +4,7 @@ body {
     justify-content: flex-end;
     align-items: center;
 }
+
+pre {
+	font-size: 1.4em;
+}
