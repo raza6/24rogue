@@ -1,3 +1,6 @@
+// Game engine 24a2 by James Routley
+// seedrandom by David Bau
+
 let rng = new Math.seedrandom();
 let rngGen = new Math.seedrandom();
 let player;
@@ -159,21 +162,6 @@ const availableRooms = [
   ],
 ];
 
-/*
-- Use seed random -> need to reinit all variables when restart pressed
-- Generate central room
-- Generate other rooms based on grid algorithm
-
-- Better enemies generation
-- Enemies AI
-- Kill all enemies -> make escape stair appears
-
-
-- Implement fighting + life
-- Implement loot : hp up, regen, better weapons, temporary invincibility / invisibility / strength
-Boss lvl4
-*/
-
 function getRandom(min, max, randGen = rng) {
   return Math.floor(randGen() * (max - min)) + min;
 }
@@ -183,28 +171,28 @@ function renderGrid(game) {
   for (let i = 0; i < 24; i++) {
     for (let j = 0; j < 24; j++) {
       switch (map[i][j]) {
-        case 0:
+        case CELL.PLAYER:
           game.setDot(i, j, Color.Green);
           break;
-        case 1:
+        case CELL.WALL:
           game.setDot(i, j, Color.Black);
           break;
-        case 2:
+        case CELL.EMPTY:
           game.setDot(i, j, Color.Gray);
           break;
-        case 3:
+        case CELL.ENEMY_1:
           game.setDot(i, j, Color.Violet);
           break;
-        case 4:
+        case CELL.ENEMY_2:
           game.setDot(i, j, Color.Indigo);
           break;
-        case 5:
+        case CELL.STAIRS:
           game.setDot(i, j, Color.Red);
           break;
-        case 6:
+        case CELL.ITEM_1:
           game.setDot(i, j, Color.Yellow);
           break;
-        case 7:
+        case CELL.ITEM_2:
           game.setDot(i, j, Color.Orange);
           break;
       }
@@ -256,8 +244,6 @@ function init() {
     c.x === cell.x && c.y === cell.y
   )));
   // Create enemies
-  console.table(chosenRooms);
-  // console.table(availableCells);
   enemies = new Array(getRandom(3, 5 + currentLvl ** 2, rngGen) + currentLvl);
   for (let i = 0; i < enemies.length; i++) {
     const [chosenCell] = availableCells.splice(getRandom(0, availableCells.length, rngGen), 1);
@@ -321,9 +307,6 @@ function init() {
     map[items[i].x][items[i].y] = items[i].cellType;
   }
 
-  console.log(map);
-  console.table(items);
-
   map[player.x][player.y] = CELL.PLAYER;
 }
 
@@ -359,7 +342,7 @@ function create(game) {
     maxhp: 5,
     hasEffect: false,
     weapon: {
-      name: 'stick',
+      name: weaponList[currentWeapon],
       damageMin: 1,
       damageMax: 3,
     },
@@ -393,14 +376,14 @@ function moveTowards(sourcex, sourcey, targetx, targety) {
   if (Math.abs(dirx) > Math.abs(diry)) {
     dx = sourcex + Math.sign(dirx);
     dy = sourcey;
-    if (map[dx][dy] !== CELL.EMPTY) { // Don't get stuck in corner
+    if (map[dx][dy] !== CELL.EMPTY) { // Don't get stuck in corners
       dx = sourcex;
       dy = sourcey + Math.sign(diry);
     }
   } else {
     dx = sourcex;
     dy = sourcey + Math.sign(diry);
-    if (map[dx][dy] !== CELL.EMPTY) { // Don't get stuck in corner
+    if (map[dx][dy] !== CELL.EMPTY) { // Don't get stuck in corners
       dx = sourcex + Math.sign(dirx);
       dy = sourcey;
     }
@@ -603,11 +586,18 @@ game.run();
 
 window.onload = () => {
   document.getElementById('restartGame').addEventListener('click', restart);
+  seedInput = document.getElementById('seedInput');
+  gameText = document.getElementById('gameText');
+  
+  // Cheatcode
+  let keysPressed = {};
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'f') {
+    keysPressed[e.key] = true;
+    if (['f', 'u', 'c', 'k'].every((k) => keysPressed[k])) {
       enemies = [];
     }
   });
-  seedInput = document.getElementById('seedInput');
-  gameText = document.getElementById('gameText');
+  document.addEventListener('keyup', (e) => {
+    delete keysPressed[e.key];
+  });
 };
