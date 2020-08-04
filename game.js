@@ -360,7 +360,7 @@ function restart() {
     rng = new Math.seedrandom(`${seedInput.value}1`);
     rngGen = new Math.seedrandom(`${seedInput.value}2`);
   }
-  create(game);
+  create();
   gameRun = true;
 }
 
