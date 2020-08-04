@@ -342,12 +342,13 @@ function create(game) {
     maxhp: 5,
     hasEffect: false,
     weapon: {
-      name: weaponList[currentWeapon],
+      name: weaponList[0],
       damageMin: 1,
       damageMax: 3,
     },
   };
   currentLvl = 1;
+  currentWeapon = 0;
   init();
 
   renderText();
