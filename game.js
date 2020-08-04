@@ -349,6 +349,7 @@ function create(game) {
   };
   currentLvl = 1;
   currentWeapon = 0;
+  currentEnemy = undefined;
   init();
 
   renderText();
@@ -360,7 +361,7 @@ function restart() {
     rng = new Math.seedrandom(`${seedInput.value}1`);
     rngGen = new Math.seedrandom(`${seedInput.value}2`);
   }
-  create();
+  create(game);
   gameRun = true;
 }
 
