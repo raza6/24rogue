@@ -349,6 +349,7 @@ function create(game) {
   };
   currentLvl = 1;
   currentWeapon = 0;
+  currentEnemy = undefined;
   init();
 
   renderText();
